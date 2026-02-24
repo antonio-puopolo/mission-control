@@ -811,7 +811,7 @@
 
         <!-- PERSONAL PROJECTS TAB -->
         <div class="tab-content" id="personal-projects">
-            <h2 style="margin-bottom: 1rem;">Personal Projects</h2>
+            <h2 style="margin-bottom: 1rem;">Personal Projects (Shared Tracking)</h2>
             <div class="kanban-board" id="personalKanban">
                 <div class="kanban-column">
                     <div class="kanban-column-title">Backlog</div>
@@ -904,7 +904,38 @@
                 points: 0,
             },
             workProjects: [],
-            personalProjects: [],
+            personalProjects: [
+                {
+                    id: 1,
+                    title: 'Website Optimization',
+                    description: 'Improve site speed, SEO, UX, performance',
+                    column: 'in-progress',
+                    owner: 'hamm',
+                    done: [],
+                    next: 'Performance audit complete → waiting for approval before implementing fixes',
+                    updated: new Date().toISOString(),
+                },
+                {
+                    id: 2,
+                    title: 'Hamm Audio Capabilities',
+                    description: 'TTS integration with ElevenLabs (voice quality, expressiveness, auto-detection)',
+                    column: 'in-progress',
+                    owner: 'hamm',
+                    done: ['Basic ElevenLabs setup', 'Voice tags in messages', 'Telegram delivery'],
+                    next: 'Multi-voice support & emotion/expressiveness control',
+                    updated: new Date().toISOString(),
+                },
+                {
+                    id: 3,
+                    title: 'Hamm Visual Capabilities',
+                    description: 'Browser automation (screenshot, click, type, navigate, vision model integration)',
+                    column: 'in-progress',
+                    owner: 'hamm',
+                    done: ['Browser snapshot tool', 'Basic navigation'],
+                    next: 'Stealth mode for scraping, full automation API, vision model vision analysis',
+                    updated: new Date().toISOString(),
+                }
+            ],
             team: [
                 { id: 1, name: 'Antonio (AP)', role: 'Sales Lead', status: 'online', model: 'Sonnet 4.5', lastActivity: 'now' },
                 { id: 2, name: 'Andrey (AM)', role: 'Agent - Holland Park', status: 'busy', model: 'Haiku', lastActivity: '2h ago' },
@@ -923,6 +954,93 @@
             renderDashboard();
             renderTeam();
             renderNotes();
+            
+            // Load live data
+            fetchSupabaseLaps();
+            fetchOutlookCalendar();
+        }
+        
+        // ===== SUPABASE LAPs INTEGRATION =====
+        async function fetchSupabaseLaps() {
+            const supabaseUrl = 'https://zauqqaifszugluyactcv.supabase.co/rest/v1/laps';
+            const supabaseKey = 'sb_publishable_ZTH04R87aWDjog6FpG7wAw_stLW9yqc';
+            const testNames = ['John Smith', 'Sarah Johnson', 'Rachel Green', 'Michael Brown', 'Emma Wilson', 'David Lee', 'Jessica Taylor', 'Robert Martinez', 'Lisa Anderson', 'Tom Harris'];
+            
+            try {
+                const response = await fetch(`${supabaseUrl}?status=eq.LAP&order=follow_up_date.asc&limit=100`, {
+                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                });
+                
+                if (!response.ok) throw new Error('Supabase fetch failed');
+                
+                const laps = await response.json();
+                
+                // Filter test names and populate work projects
+                state.workProjects = laps
+                    .filter(lap => !testNames.includes(lap.name))
+                    .map(lap => ({
+                        id: lap.id,
+                        title: lap.name,
+                        column: 'cold',
+                        client: lap.name,
+                        address: lap.address || 'N/A',
+                        priority: 'warm',
+                        daysInStage: Math.floor((Date.now() - new Date(lap.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+                        supabaseId: lap.id,
+                    }));
+                
+                saveState();
+                renderWorkKanban();
+                logActivity(`📊 Synced ${state.workProjects.length} LAPs from Supabase`);
+            } catch (error) {
+                console.error('Supabase error:', error);
+                logActivity('⚠️ Supabase sync failed (using local data)');
+            }
+        }
+        
+        // ===== OUTLOOK CALENDAR INTEGRATION =====
+        async function fetchOutlookCalendar() {
+            const icsUrl = 'https://outlook.office365.com/owa/calendar/07f56935aa514c53a9b25c4cd91ab770@eplace.com.au/15298fe26beb432fa81e6a151d8ea95c8741059819679929176/S-1-8-4263074342-955477810-1291768194-2244477723/reachcalendar.ics';
+            
+            try {
+                const response = await fetch(icsUrl);
+                if (!response.ok) throw new Error('Calendar fetch failed');
+                const icsText = await response.text();
+                
+                // Parse ICS for appraisal events
+                const lines = icsText.split('\n');
+                let inEvent = false, summary = '', dtstart = '';
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line === 'BEGIN:VEVENT') inEvent = true;
+                    if (line === 'END:VEVENT') {
+                        if (inEvent && summary.toLowerCase().includes('appraisal')) {
+                            const eventDate = dtstart.substring(0, 8);
+                            logActivity(`📅 Appraisal scheduled: ${summary} (${formatDate(eventDate)})`);
+                        }
+                        inEvent = false;
+                        summary = '';
+                        dtstart = '';
+                    }
+                    if (inEvent && line.startsWith('SUMMARY:')) summary = line.substring(8);
+                    if (inEvent && line.startsWith('DTSTART')) dtstart = line.substring(line.indexOf(':') + 1);
+                }
+                
+                logActivity('📅 Calendar synced');
+            } catch (error) {
+                console.error('Calendar error:', error);
+                // Graceful fallback
+            }
+        }
+        
+        // ===== UTILITY FUNCTIONS =====
+        function formatDate(yyyymmdd) {
+            if (yyyymmdd.length !== 8) return yyyymmdd;
+            const y = yyyymmdd.substring(0, 4);
+            const m = yyyymmdd.substring(4, 6);
+            const d = yyyymmdd.substring(6, 8);
+            return `${d}/${m}/${y}`;
         }
 
         // ===== SAVE STATE TO LOCALSTORAGE =====
@@ -1086,14 +1204,80 @@
                 const container = document.querySelector(`.kanban-cards[data-column="${col}"]`);
                 const cards = state.workProjects.filter(c => c.column === col);
                 container.innerHTML = cards.map(card => `
-                    <div class="kanban-card" draggable="true">
+                    <div class="kanban-card" draggable="true" data-card-id="${card.id}" data-from-column="${card.column}">
                         <div class="kanban-card-title">${card.title}</div>
                         <div class="kanban-card-meta">${card.client} • ${card.address}</div>
                         <div class="kanban-card-meta">${card.daysInStage} days</div>
                         <div class="kanban-card-badge badge-${card.priority}">${card.priority}</div>
                     </div>
                 `).join('');
+                
+                // Re-attach drag listeners
+                container.querySelectorAll('.kanban-card').forEach(card => {
+                    card.addEventListener('dragstart', handleDragStart);
+                    card.addEventListener('dragend', handleDragEnd);
+                });
             });
+            
+            // Attach drop listeners to columns
+            document.querySelectorAll('.kanban-cards').forEach(col => {
+                col.addEventListener('dragover', handleDragOver);
+                col.addEventListener('drop', handleDrop);
+            });
+        }
+        
+        let draggedCard = null;
+        
+        function handleDragStart(e) {
+            draggedCard = this;
+            this.style.opacity = '0.5';
+        }
+        
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            draggedCard = null;
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dropEffect = 'move';
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            if (!draggedCard) return;
+            
+            const cardId = parseInt(draggedCard.dataset.cardId);
+            const fromColumn = draggedCard.dataset.fromColumn;
+            const toColumn = this.dataset.column;
+            
+            if (fromColumn === toColumn) return;
+            
+            const card = state.workProjects.find(c => c.id === cardId);
+            if (!card) return;
+            
+            // Move card
+            card.column = toColumn;
+            
+            // Award points based on stage
+            const pointsMap = {
+                'appraisal-booked': 10,
+                'appraisal-done': 5,
+                'ready': 5,
+                'listing': 50,
+            };
+            
+            const points = pointsMap[toColumn] || 0;
+            if (points > 0) {
+                state.dashboard.points += points;
+                logActivity(`✨ +${points} points: ${card.title} moved to ${toColumn.replace('-', ' ')}`);
+            } else {
+                logActivity(`📍 ${card.title} moved to ${toColumn.replace('-', ' ')}`);
+            }
+            
+            saveState();
+            renderWorkKanban();
+            renderDashboard();
         }
 
         function renderPersonalKanban() {
@@ -1101,13 +1285,40 @@
             columns.forEach(col => {
                 const container = document.querySelector(`#personalKanban .kanban-cards[data-column="${col}"]`);
                 const cards = state.personalProjects.filter(c => c.column === col);
-                container.innerHTML = cards.map(card => `
-                    <div class="kanban-card">
-                        <div class="kanban-card-title">${card.complete ? '✅' : ''} ${card.title}</div>
-                        <div class="kanban-card-badge badge-warm">${card.priority}</div>
-                    </div>
-                `).join('');
+                container.innerHTML = cards.map(card => {
+                    const ownerLabel = card.owner === 'hamm' ? '🔴 Hamm' : '🔵 Antonio';
+                    const doneList = card.done && card.done.length > 0 
+                        ? `<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light);"><div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">✅ Done:</div>${card.done.map(d => `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">• ${d}</div>`).join('')}</div>`
+                        : '';
+                    const nextSection = card.next ? `<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light);"><div style="font-size: 0.8rem; color: var(--accent); font-weight: 600; margin-bottom: 0.5rem;">Next:</div><div style="font-size: 0.75rem; color: var(--text-secondary);">${card.next}</div></div>` : '';
+                    
+                    return `
+                        <div class="kanban-card" style="cursor: pointer;" onclick="editPersonalCard(${card.id})">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <div class="kanban-card-title">${card.title}</div>
+                                <div style="font-size: 0.7rem; background: ${card.owner === 'hamm' ? 'rgba(255, 107, 107, 0.2)' : 'rgba(108, 99, 255, 0.2)'}; color: ${card.owner === 'hamm' ? '#ff6b6b' : '#6c63ff'}; padding: 0.25rem 0.5rem; border-radius: 12px;">${ownerLabel}</div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${card.description}</div>
+                            ${doneList}
+                            ${nextSection}
+                        </div>
+                    `;
+                }).join('');
             });
+        }
+        
+        function editPersonalCard(id) {
+            const card = state.personalProjects.find(c => c.id === id);
+            if (!card) return;
+            
+            const newNext = prompt('Update next steps:', card.next || '');
+            if (newNext !== null) {
+                card.next = newNext;
+                card.updated = new Date().toISOString();
+                saveState();
+                renderPersonalKanban();
+                logActivity(`Updated: ${card.title} → "${newNext}"`);
+            }
         }
 
         // ===== ACTIVITY LOGGING =====
