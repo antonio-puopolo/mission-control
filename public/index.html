@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Control — Antonio's Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== CSS VARIABLES (Easy Theming) ===== */
+        :root {
+            --bg-primary: #050508;
+            --bg-secondary: #0f0f14;
+            --bg-card: rgba(20, 20, 30, 0.7);
+            --border-light: rgba(255, 255, 255, 0.06);
+            --border-medium: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --accent: #00D4AA;
+            --accent-dark: #00b894;
+            --accent-light: #33e8c5;
+            --success: #00d4aa;
+            --warning: #ffa502;
+            --danger: #ff6b6b;
+            --info: #6c63ff;
+            --blur: 20px;
+            --radius: 12px;
+        }
+
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(5, 5, 8, 0.8);
+            backdrop-filter: blur(var(--blur));
+            border-bottom: 1px solid var(--border-light);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+
+        .header-center {
+            display: flex;
+            gap: 2rem;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-tab:hover {
+            color: var(--accent);
+        }
+
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .live-clock {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        main {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2.5rem;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* ===== TAB CONTENT ===== */
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== CARD STYLING ===== */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--border-medium);
+            transform: translateY(-2px);
+        }
+
+        /* ===== DASHBOARD TAB ===== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-unit {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            transition: width 0.3s ease;
+        }
+
+        /* Circular Progress */
+        .circular-progress {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .circular-progress svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .circular-progress-circle {
+            fill: none;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .circular-progress-bg {
+            stroke: var(--bg-secondary);
+            stroke-width: 8;
+        }
+
+        .circular-progress-fill {
+            stroke: url(#gradient);
+            stroke-width: 8;
+            stroke-dasharray: 376.99;
+            stroke-dashoffset: 376.99;
+        }
+
+        /* ===== ACTIVITY FEED ===== */
+        .activity-feed {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.9rem;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-timestamp {
+            color: var(--text-secondary);
+            min-width: 60px;
+            font-size: 0.8rem;
+        }
+
+        .activity-text {
+            flex: 1;
+        }
+
+        /* ===== KANBAN BOARD ===== */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .kanban-column {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 1rem;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kanban-column-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .kanban-cards {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .kanban-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: move;
+            transition: all 0.2s ease;
+        }
+
+        .kanban-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 212, 170, 0.1);
+        }
+
+        .kanban-card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .kanban-card-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .kanban-card-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .badge-hot {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .badge-warm {
+            background: rgba(255, 165, 2, 0.2);
+            color: #ffa502;
+        }
+
+        .badge-cold {
+            background: rgba(108, 99, 255, 0.2);
+            color: #6c63ff;
+        }
+
+        .add-card-btn {
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px dashed var(--accent);
+            color: var(--accent);
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .add-card-btn:hover {
+            background: rgba(0, 212, 170, 0.2);
+        }
+
+        /* ===== TEAM CARDS ===== */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .team-card {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .team-card-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .team-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .team-role {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .team-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .team-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-online {
+            background: var(--success);
+        }
+
+        .status-busy {
+            background: var(--warning);
+        }
+
+        .status-idle {
+            background: var(--text-secondary);
+        }
+
+        /* ===== LEADERBOARD ===== */
+        .leaderboard {
+            margin-top: 2rem;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .leaderboard-rank {
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .leaderboard-name {
+            flex: 1;
+            margin: 0 1rem;
+        }
+
+        .leaderboard-points {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* ===== BADGES ===== */
+        .badges-section {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        input, textarea, select {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+        }
+
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        /* ===== BUTTONS ===== */
+        button {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        button:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: var(--bg-secondary);
+            color: var(--accent);
+            border: 1px solid var(--border-medium);
+        }
+
+        button.secondary:hover {
+            background: var(--border-light);
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-medium);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            main {
+                padding: 1.5rem;
+            }
+
+            .header-center {
+                display: none;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-left">
+            <div class="logo">⚡ Mission Control</div>
+        </div>
+        <div class="header-center">
+            <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="nav-tab" data-tab="work-projects">💼 Work Projects</button>
+            <button class="nav-tab" data-tab="personal-projects">🏡 Personal</button>
+            <button class="nav-tab" data-tab="team">👥 Team</button>
+            <button class="nav-tab" data-tab="targets">📋 Targets</button>
+            <button class="nav-tab" data-tab="notes">📝 Notes</button>
+        </div>
+        <div class="header-right">
+            <div class="live-clock" id="liveClock">00:00</div>
+            <div class="status-dot"></div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main>
+        <!-- DASHBOARD TAB -->
+        <div class="tab-content active" id="dashboard">
+            <div class="dashboard-grid">
+                <!-- GCI Target Card -->
+                <div class="card metric-card">
+                    <div class="metric-label">💰 GCI Target</div>
+                    <div class="circular-progress" id="gciProgress">
+                        <svg viewBox="0 0 120 120">
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#00D4AA;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#33e8c5;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle class="circular-progress-circle circular-progress-bg" cx="60" cy="60" r="60"></circle>
+                            <circle class="circular-progress-circle circular-progress-fill" cx="60" cy="60" r="60"></circle>
+                        </svg>
+                    </div>
+                    <div class="metric-value" style="text-align: center; margin-top: 1rem;" id="gciValue">$0</div>
+                    <div class="metric-unit" style="text-align: center;">of $4M</div>
+                </div>
+
+                <!-- Listings Card -->
+                <div class="card metric-card">
+                    <div class="metric-label">📍 Listings</div>
+                    <div class="metric-value"><span id="listingsCount">0</span> / 110</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="listingsFill" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-unit" id="listingsPercent">0%</div>
+                </div>
+
+                <!-- LAPs Card -->
+                <div class="card metric-card">
+                    <div class="metric-label">📋 LAPs</div>
+                    <div class="metric-value"><span id="lapsCount">0</span> / 350</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="lapsFill" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-unit" id="lapsPercent">0%</div>
+                </div>
+
+                <!-- Days Remaining Card -->
+                <div class="card metric-card">
+                    <div class="metric-label">⏰ Days Remaining</div>
+                    <div class="metric-value" id="daysRemaining">0</div>
+                    <div class="metric-unit">in FY25-26</div>
+                </div>
+            </div>
+
+            <!-- Activity Feed & Leaderboard Section -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                <!-- Activity Feed -->
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Recent Activity</h3>
+                    <div class="activity-feed" id="activityFeed">
+                        <div class="activity-item">
+                            <div class="activity-timestamp">Just now</div>
+                            <div class="activity-text">Dashboard initialized ✅</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Your Stats</h3>
+                    <div class="leaderboard" id="leaderboard">
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-rank">🥇</div>
+                            <div class="leaderboard-name">LAPs This Month</div>
+                            <div class="leaderboard-points" id="monthlyLaps">0</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-rank">🥈</div>
+                            <div class="leaderboard-name">Listings This Month</div>
+                            <div class="leaderboard-points" id="monthlyListings">0</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-rank">🥉</div>
+                            <div class="leaderboard-name">Total Points</div>
+                            <div class="leaderboard-points" id="totalPoints">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Badges Section -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Badges & Streaks</h3>
+                <div class="badges-section" id="badgesSection">
+                    <div class="badge">
+                        <span>🔥</span>
+                        <span>LAP Streak: <strong id="lapStreak">0</strong> days</span>
+                    </div>
+                    <div class="badge">
+                        <span>📈</span>
+                        <span>Listing Streak: <strong id="listingStreak">0</strong> days</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORK PROJECTS TAB -->
+        <div class="tab-content" id="work-projects">
+            <h2 style="margin-bottom: 1rem;">Work Projects (Real Estate Pipeline)</h2>
+            <div class="kanban-board" id="workKanban">
+                <div class="kanban-column">
+                    <div class="kanban-column-title">Cold Leads</div>
+                    <div class="kanban-cards" data-column="cold"></div>
+                    <button class="add-card-btn" onclick="addWorkCard('cold')">+ Add Lead</button>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-column-title">Appraisal Booked</div>
+                    <div class="kanban-cards" data-column="appraisal-booked"></div>
+                    <button class="add-card-btn" onclick="addWorkCard('appraisal-booked')">+ Add</button>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-column-title">Appraisal Done</div>
+                    <div class="kanban-cards" data-column="appraisal-done"></div>
+                    <button class="add-card-btn" onclick="addWorkCard('appraisal-done')">+ Add</button>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-column-title">Ready to Follow-Up</div>
+                    <div class="kanban-cards" data-column="ready"></div>
+                    <button class="add-card-btn" onclick="addWorkCard('ready')">+ Add</button>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-column-title">Listing Active</div>
+                    <div class="kanban-cards" data-column="listing"></div>
+                    <button class="add-card-btn" onclick="addWorkCard('listing')">+ Add</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERSONAL PROJECTS TAB -->
+        <div class="tab-content" id="personal-projects">
+            <h2 style="margin-bottom: 1rem;">Personal Projects</h2>
+            <div class="kanban-board" id="personalKanban">
+                <div class="kanban-column">
+                    <div class="kanban-column-title">Backlog</div>
+                    <div class="kanban-cards" data-column="backlog"></div>
+                    <button class="add-card-btn" onclick="addPersonalCard('backlog')">+ Add Project</button>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-column-title">In Progress</div>
+                    <div class="kanban-cards" data-column="in-progress"></div>
+                    <button class="add-card-btn" onclick="addPersonalCard('in-progress')">+ Add</button>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-column-title">Done ✅</div>
+                    <div class="kanban-cards" data-column="done"></div>
+                    <button class="add-card-btn" onclick="addPersonalCard('done')">+ Add</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEAM TAB -->
+        <div class="tab-content" id="team">
+            <h2 style="margin-bottom: 1rem;">Team Command Center</h2>
+            <div class="team-grid" id="teamGrid">
+                <!-- Teams cards will be populated by JS -->
+            </div>
+        </div>
+
+        <!-- TARGETS TAB -->
+        <div class="tab-content" id="targets">
+            <h2 style="margin-bottom: 1rem;">Annual Targets & Goals</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div class="card">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">GCI Target ($)</label>
+                    <input type="number" id="targetGci" value="4000000" onchange="saveTargets()">
+                </div>
+                <div class="card">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Listings Target</label>
+                    <input type="number" id="targetListings" value="110" onchange="saveTargets()">
+                </div>
+                <div class="card">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">LAPs Target</label>
+                    <input type="number" id="targetLaps" value="350" onchange="saveTargets()">
+                </div>
+            </div>
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>Key Milestones</h3>
+                <div style="margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border-light);">
+                        <span>100 Listings Reached</span>
+                        <span id="milestone-listings" style="color: var(--text-secondary);">0/100</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border-light);">
+                        <span>200 LAPs Reached</span>
+                        <span id="milestone-laps" style="color: var(--text-secondary);">0/200</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 1rem;">
+                        <span>$2M GCI Halfway</span>
+                        <span id="milestone-gci" style="color: var(--text-secondary);">$0/$2M</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTES TAB -->
+        <div class="tab-content" id="notes">
+            <h2 style="margin-bottom: 1rem;">Quick Notes & Capture</h2>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                    <label style="font-weight: 600;">Your Notes</label>
+                    <small id="charCount" style="color: var(--text-secondary);">0 characters</small>
+                </div>
+                <textarea id="notesArea" placeholder="Capture market intel, talking points, ideas..." onkeyup="updateNotes(); updateCharCount();"></textarea>
+                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                    Last saved: <span id="lastSaved">never</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ===== STATE MANAGEMENT =====
+        const state = {
+            dashboard: {
+                gciTarget: 4000000,
+                listingsTarget: 110,
+                lapsTarget: 350,
+                gciCurrent: 0,
+                listingsCurrent: 0,
+                lapsCurrent: 0,
+                points: 0,
+            },
+            workProjects: [],
+            personalProjects: [],
+            team: [
+                { id: 1, name: 'Antonio (AP)', role: 'Sales Lead', status: 'online', model: 'Sonnet 4.5', lastActivity: 'now' },
+                { id: 2, name: 'Andrey (AM)', role: 'Agent - Holland Park', status: 'busy', model: 'Haiku', lastActivity: '2h ago' },
+                { id: 3, name: 'Karl (KC)', role: 'Agent - Coorparoo', status: 'idle', model: 'Sonnet', lastActivity: '4h ago' },
+            ],
+            activity: [],
+            notes: '',
+        };
+
+        // ===== LOAD STATE FROM LOCALSTORAGE =====
+        function loadState() {
+            const saved = localStorage.getItem('missionControlState');
+            if (saved) {
+                Object.assign(state, JSON.parse(saved));
+            }
+            renderDashboard();
+            renderTeam();
+            renderNotes();
+        }
+
+        // ===== SAVE STATE TO LOCALSTORAGE =====
+        function saveState() {
+            localStorage.setItem('missionControlState', JSON.stringify(state));
+        }
+
+        // ===== LIVE CLOCK =====
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('liveClock').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ===== DASHBOARD RENDERING =====
+        function renderDashboard() {
+            const { gciTarget, listingsTarget, lapsTarget, gciCurrent, listingsCurrent, lapsCurrent, points } = state.dashboard;
+
+            // Update metrics
+            document.getElementById('gciValue').textContent = '$' + gciCurrent.toLocaleString();
+            document.getElementById('listingsCount').textContent = listingsCurrent;
+            document.getElementById('listingsPercent').textContent = Math.round((listingsCurrent / listingsTarget) * 100) + '%';
+            document.getElementById('listingsFill').style.width = (listingsCurrent / listingsTarget) * 100 + '%';
+
+            document.getElementById('lapsCount').textContent = lapsCurrent;
+            document.getElementById('lapsPercent').textContent = Math.round((lapsCurrent / lapsTarget) * 100) + '%';
+            document.getElementById('lapsFill').style.width = (lapsCurrent / lapsTarget) * 100 + '%';
+
+            // Update circular progress
+            const gciPercent = Math.min((gciCurrent / gciTarget) * 100, 100);
+            const circumference = 2 * Math.PI * 60;
+            const offset = circumference - (gciPercent / 100) * circumference;
+            document.querySelector('.circular-progress-fill').style.strokeDashoffset = offset;
+
+            // Update days remaining (to June 30, 2026)
+            const now = new Date();
+            const endOfFY = new Date(2026, 5, 30); // June 30, 2026
+            const daysLeft = Math.max(0, Math.ceil((endOfFY - now) / (1000 * 60 * 60 * 24)));
+            document.getElementById('daysRemaining').textContent = daysLeft;
+
+            // Update points
+            document.getElementById('totalPoints').textContent = points.toLocaleString();
+
+            // Activity feed (show last 5)
+            const activityFeed = document.getElementById('activityFeed');
+            activityFeed.innerHTML = state.activity.slice(-5).reverse().map(a => `
+                <div class="activity-item">
+                    <div class="activity-timestamp">${a.time}</div>
+                    <div class="activity-text">${a.text}</div>
+                </div>
+            `).join('');
+
+            // Streaks (placeholder)
+            document.getElementById('lapStreak').textContent = Math.floor(Math.random() * 7);
+            document.getElementById('listingStreak').textContent = Math.floor(Math.random() * 5);
+        }
+
+        // ===== TEAM RENDERING =====
+        function renderTeam() {
+            const teamGrid = document.getElementById('teamGrid');
+            teamGrid.innerHTML = state.team.map(member => `
+                <div class="card team-card" onclick="showTeamDetail('${member.id}')">
+                    <div class="team-card-inner">
+                        <div class="team-name">${member.name}</div>
+                        <div class="team-role">${member.role}</div>
+                        <div class="team-status">
+                            <div class="team-status-dot status-${member.status}"></div>
+                            <span>${member.status}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            Model: ${member.model}<br>
+                            Last: ${member.lastActivity}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showTeamDetail(id) {
+            alert(`Team member #${id} details (coming soon)`);
+        }
+
+        // ===== NOTES =====
+        function updateNotes() {
+            state.notes = document.getElementById('notesArea').value;
+            saveState();
+            updateLastSaved();
+        }
+
+        function updateCharCount() {
+            const count = document.getElementById('notesArea').value.length;
+            document.getElementById('charCount').textContent = count + ' characters';
+        }
+
+        function updateLastSaved() {
+            const now = new Date();
+            const time = now.toLocaleTimeString();
+            document.getElementById('lastSaved').textContent = time;
+        }
+
+        function renderNotes() {
+            document.getElementById('notesArea').value = state.notes;
+            updateCharCount();
+        }
+
+        // ===== TARGETS =====
+        function saveTargets() {
+            state.dashboard.gciTarget = parseInt(document.getElementById('targetGci').value);
+            state.dashboard.listingsTarget = parseInt(document.getElementById('targetListings').value);
+            state.dashboard.lapsTarget = parseInt(document.getElementById('targetLaps').value);
+            saveState();
+            renderDashboard();
+        }
+
+        // ===== KANBAN CARDS =====
+        function addWorkCard(column) {
+            const title = prompt('Enter LAP/Project name:');
+            if (!title) return;
+
+            const card = {
+                id: Date.now(),
+                title,
+                column,
+                client: prompt('Client name:') || 'Unnamed',
+                address: prompt('Address:') || 'N/A',
+                priority: 'warm',
+                daysInStage: 0,
+            };
+
+            state.workProjects.push(card);
+            saveState();
+            renderWorkKanban();
+            logActivity(`Added: ${title} to ${column}`);
+        }
+
+        function addPersonalCard(column) {
+            const title = prompt('Enter project name:');
+            if (!title) return;
+
+            const card = {
+                id: Date.now(),
+                title,
+                column,
+                description: '',
+                priority: 'medium',
+                complete: false,
+            };
+
+            state.personalProjects.push(card);
+            saveState();
+            renderPersonalKanban();
+            logActivity(`Personal project: ${title}`);
+        }
+
+        function renderWorkKanban() {
+            const columns = ['cold', 'appraisal-booked', 'appraisal-done', 'ready', 'listing'];
+            columns.forEach(col => {
+                const container = document.querySelector(`.kanban-cards[data-column="${col}"]`);
+                const cards = state.workProjects.filter(c => c.column === col);
+                container.innerHTML = cards.map(card => `
+                    <div class="kanban-card" draggable="true">
+                        <div class="kanban-card-title">${card.title}</div>
+                        <div class="kanban-card-meta">${card.client} • ${card.address}</div>
+                        <div class="kanban-card-meta">${card.daysInStage} days</div>
+                        <div class="kanban-card-badge badge-${card.priority}">${card.priority}</div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function renderPersonalKanban() {
+            const columns = ['backlog', 'in-progress', 'done'];
+            columns.forEach(col => {
+                const container = document.querySelector(`#personalKanban .kanban-cards[data-column="${col}"]`);
+                const cards = state.personalProjects.filter(c => c.column === col);
+                container.innerHTML = cards.map(card => `
+                    <div class="kanban-card">
+                        <div class="kanban-card-title">${card.complete ? '✅' : ''} ${card.title}</div>
+                        <div class="kanban-card-badge badge-warm">${card.priority}</div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        // ===== ACTIVITY LOGGING =====
+        function logActivity(text) {
+            const time = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+            state.activity.push({ text, time });
+            saveState();
+            renderDashboard();
+        }
+
+        // ===== TAB NAVIGATION =====
+        document.querySelectorAll('.nav-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ===== INITIALIZE =====
+        loadState();
+        renderWorkKanban();
+        renderPersonalKanban();
+    </script>
+</body>
+</html>
