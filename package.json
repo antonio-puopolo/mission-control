@@ -1,0 +1,17 @@
+{
+  "name": "mission-control",
+  "version": "1.0.0",
+  "description": "Antonio's Personal Command Center Dashboard",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server",
+    "build": "echo 'Static site - no build needed'"
+  },
+  "keywords": [
+    "dashboard",
+    "mission-control",
+    "real-estate"
+  ],
+  "author": "Hamm",
+  "license": "MIT"
+}
