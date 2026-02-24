@@ -568,6 +568,17 @@
             background: var(--border-light);
         }
 
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             main {
@@ -575,7 +586,48 @@
             }
 
             .header-center {
-                display: none;
+                display: flex;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(5, 5, 8, 0.95);
+                backdrop-filter: blur(var(--blur));
+                border-bottom: 1px solid var(--border-light));
+                flex-direction: column;
+                gap: 0;
+                flex: none;
+                justify-content: flex-start;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+                z-index: 999;
+            }
+
+            .header-center.mobile-active {
+                max-height: 400px;
+            }
+
+            .nav-tab {
+                padding: 1rem;
+                border-bottom: 1px solid var(--border-light);
+                border-bottom-width: 2px;
+                border-bottom-color: transparent;
+                text-align: left;
+                font-size: 0.95rem;
+            }
+
+            .nav-tab.active {
+                background: rgba(0, 212, 170, 0.1);
+                border-bottom-color: var(--accent);
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            header {
+                padding: 1rem;
             }
 
             .dashboard-grid {
@@ -589,6 +641,14 @@
             .metric-value {
                 font-size: 2rem;
             }
+
+            .header-right {
+                gap: 1rem;
+            }
+
+            .live-clock {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -598,7 +658,7 @@
         <div class="header-left">
             <div class="logo">⚡ Mission Control</div>
         </div>
-        <div class="header-center">
+        <div class="header-center" id="headerCenter">
             <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
             <button class="nav-tab" data-tab="work-projects">💼 Work Projects</button>
             <button class="nav-tab" data-tab="personal-projects">🏡 Personal</button>
@@ -609,6 +669,7 @@
         <div class="header-right">
             <div class="live-clock" id="liveClock">00:00</div>
             <div class="status-dot"></div>
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
         </div>
     </header>
 
@@ -1064,7 +1125,18 @@
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 btn.classList.add('active');
                 document.getElementById(btn.dataset.tab).classList.add('active');
+                // Close mobile menu on tab click
+                document.getElementById('headerCenter').classList.remove('mobile-active');
+                document.getElementById('mobileMenuToggle').textContent = '☰';
             });
+        });
+
+        // ===== MOBILE MENU TOGGLE =====
+        document.getElementById('mobileMenuToggle').addEventListener('click', () => {
+            const menu = document.getElementById('headerCenter');
+            const toggle = document.getElementById('mobileMenuToggle');
+            menu.classList.toggle('mobile-active');
+            toggle.textContent = menu.classList.contains('mobile-active') ? '✕' : '☰';
         });
 
         // ===== INITIALIZE =====
