@@ -837,32 +837,25 @@
 
         <!-- LAP TRACKER TAB -->
         <div class="tab-content" id="lap-tracker">
-            <h2 style="margin-bottom: 1rem;">LAP Tracker (Full Pipeline)</h2>
-            <div style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                <input type="text" id="lapFilter" placeholder="Search by address, client..." style="flex: 1; min-width: 200px;" onkeyup="filterLapTable()">
-                <select id="statusFilter" onchange="filterLapTable()" style="min-width: 150px;">
-                    <option value="">All Status</option>
-                    <option value="LAP">LAP</option>
-                    <option value="Listed">Listed</option>
-                    <option value="Sold">Sold</option>
-                    <option value="Withdrawn">Withdrawn</option>
-                </select>
+            <h2 style="margin-bottom: 1rem;">📋 LAP Tracker (Full Pipeline)</h2>
+            
+            <!-- Status Tabs -->
+            <div style="display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--border-light); flex-wrap: wrap;">
+                <button class="nav-tab" onclick="filterLapsByStatus('LAP')" style="border-bottom: 3px solid transparent;" data-status="LAP">📍 LAP <span id="countLAP" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
+                <button class="nav-tab" onclick="filterLapsByStatus('Listed')" style="border-bottom: 3px solid transparent;" data-status="Listed">🏠 LISTED <span id="countListed" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
+                <button class="nav-tab" onclick="filterLapsByStatus('Sold')" style="border-bottom: 3px solid transparent;" data-status="Sold">✅ SOLD <span id="countSold" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
+                <button class="nav-tab" onclick="filterLapsByStatus('DEAD')" style="border-bottom: 3px solid transparent;" data-status="DEAD">💀 DEAD <span id="countDEAD" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
+                <button class="nav-tab" onclick="filterLapsByStatus('LOST')" style="border-bottom: 3px solid transparent;" data-status="LOST">🚨 LOST <span id="countLOST" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
             </div>
-            <div class="card" style="overflow-x: auto;">
-                <table id="lapTable" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                    <thead>
-                        <tr style="border-bottom: 1px solid var(--border-light);">
-                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Address</th>
-                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Client</th>
-                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Status</th>
-                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Follow-Up</th>
-                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lapTableBody">
-                        <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Loading LAPs...</td></tr>
-                    </tbody>
-                </table>
+            
+            <!-- Kanban Cards View -->
+            <div id="lapKanbanView" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <!-- LAP cards will be rendered here -->
+            </div>
+            
+            <!-- Table View (Toggle) -->
+            <div style="text-align: right; margin-top: 2rem;">
+                <button class="secondary" onclick="toggleLapView()" style="padding: 0.5rem 1rem; font-size: 0.85rem;">📊 Switch to Table View</button>
             </div>
         </div>
 
@@ -1237,6 +1230,12 @@
                 renderDashboard();
                 renderLapTable();
                 renderWorkKanban();
+                updateLapCounts();
+                
+                // Initialize LAP tracker view
+                if (window.location.hash.includes('lap-tracker')) {
+                    filterLapsByStatus('LAP');
+                }
                 
                 // Log sync only on first load (don't spam activity feed)
                 if (!window.firstSyncDone) {
@@ -1258,63 +1257,117 @@
             }
         }
         
-        // ===== LAP TABLE RENDERING =====
+        // ===== LAP TABLE RENDERING (Legacy - keeping for now, will be replaced by kanban) =====
         function renderLapTable() {
-            const laps = state.allLaps || [];
-            const tbody = document.getElementById('lapTableBody');
+            // Now handled by renderLapsByStatus() and filterLapsByStatus()
+            // This function is kept for backward compatibility
+            return;
+        }
+        
+        // ===== LAP TRACKER STATUS FILTERING =====
+        let lapCurrentFilter = 'LAP';
+        
+        function filterLapsByStatus(status) {
+            lapCurrentFilter = status;
+            
+            // Update tab active state
+            document.querySelectorAll('[data-status]').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.borderBottomColor = 'transparent';
+                btn.style.color = 'var(--text-secondary)';
+            });
+            document.querySelector(`[data-status="${status}"]`).classList.add('active');
+            document.querySelector(`[data-status="${status}"]`).style.borderBottomColor = 'var(--accent)';
+            document.querySelector(`[data-status="${status}"]`).style.color = 'var(--accent)';
+            
+            renderLapsByStatus(status);
+        }
+        
+        function renderLapsByStatus(status) {
+            const laps = (state.allLaps || []).filter(lap => lap.status === status);
+            const container = document.getElementById('lapKanbanView');
             
             if (laps.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No LAPs found. Sync Supabase to load.</td></tr>';
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-secondary);">No ${status} LAPs yet</div>`;
                 return;
             }
             
-            tbody.innerHTML = laps.map(lap => {
+            container.innerHTML = laps.map(lap => {
                 const followUp = lap.follow_up_date ? new Date(lap.follow_up_date).toLocaleDateString('en-AU') : '-';
-                const statusColor = lap.status === 'LAP' ? 'var(--info)' : lap.status === 'Listed' ? 'var(--accent)' : lap.status === 'Sold' ? 'var(--success)' : 'var(--text-secondary)';
+                const statusColor = status === 'LAP' ? 'var(--info)' : status === 'Listed' ? 'var(--accent)' : status === 'Sold' ? 'var(--success)' : 'var(--warning)';
                 
                 return `
-                    <tr style="border-bottom: 1px solid var(--border-light); hover: background-color: rgba(0, 212, 170, 0.05);">
-                        <td style="padding: 1rem; color: var(--text-primary);">${lap.address || '-'}</td>
-                        <td style="padding: 1rem; color: var(--text-primary);">${lap.name || '-'}</td>
-                        <td style="padding: 1rem;"><span style="color: ${statusColor}; font-weight: 600;">${lap.status || '-'}</span></td>
-                        <td style="padding: 1rem; color: var(--text-secondary);">${followUp}</td>
-                        <td style="padding: 1rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lap.notes || '-'}</td>
-                    </tr>
+                    <div class="card" style="border-left: 4px solid ${statusColor};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="font-weight: 600; color: var(--text-primary);">${lap.address || '-'}</div>
+                            <select onchange="updateLapStatus(${lap.id}, this.value)" style="font-size: 0.8rem; padding: 0.25rem;">
+                                <option value="LAP" ${status === 'LAP' ? 'selected' : ''}>📍 LAP</option>
+                                <option value="Listed" ${status === 'Listed' ? 'selected' : ''}>🏠 LISTED</option>
+                                <option value="Sold" ${status === 'Sold' ? 'selected' : ''}>✅ SOLD</option>
+                                <option value="DEAD" ${status === 'DEAD' ? 'selected' : ''}>💀 DEAD</option>
+                                <option value="LOST" ${status === 'LOST' ? 'selected' : ''}>🚨 LOST</option>
+                            </select>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${lap.name || 'Unknown'}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light);">
+                            📅 Follow-up: ${followUp}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+                            ${lap.notes ? lap.notes.substring(0, 200) + (lap.notes.length > 200 ? '...' : '') : 'No notes'}
+                        </div>
+                    </div>
                 `;
             }).join('');
         }
         
-        function filterLapTable() {
-            const filterText = document.getElementById('lapFilter').value.toLowerCase();
-            const filterStatus = document.getElementById('statusFilter').value;
-            const tbody = document.getElementById('lapTableBody');
+        async function updateLapStatus(lapId, newStatus) {
+            const supabaseUrl = 'https://zauqqaifszugluyactcv.supabase.co/rest/v1/laps';
+            const supabaseKey = 'sb_publishable_ZTH04R87aWDjog6FpG7wAw_stLW9yqc';
             
-            const filtered = (state.allLaps || []).filter(lap => {
-                const matchesText = (lap.address || '').toLowerCase().includes(filterText) || 
-                                    (lap.name || '').toLowerCase().includes(filterText);
-                const matchesStatus = !filterStatus || lap.status === filterStatus;
-                return matchesText && matchesStatus;
-            });
-            
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No LAPs match your filter.</td></tr>';
-                return;
-            }
-            
-            tbody.innerHTML = filtered.map(lap => {
-                const followUp = lap.follow_up_date ? new Date(lap.follow_up_date).toLocaleDateString('en-AU') : '-';
-                const statusColor = lap.status === 'LAP' ? 'var(--info)' : lap.status === 'Listed' ? 'var(--accent)' : lap.status === 'Sold' ? 'var(--success)' : 'var(--text-secondary)';
+            try {
+                const response = await fetch(`${supabaseUrl}?id=eq.${lapId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus, updated_at: new Date().toISOString() })
+                });
                 
-                return `
-                    <tr style="border-bottom: 1px solid var(--border-light);">
-                        <td style="padding: 1rem; color: var(--text-primary);">${lap.address || '-'}</td>
-                        <td style="padding: 1rem; color: var(--text-primary);">${lap.name || '-'}</td>
-                        <td style="padding: 1rem;"><span style="color: ${statusColor}; font-weight: 600;">${lap.status || '-'}</span></td>
-                        <td style="padding: 1rem; color: var(--text-secondary);">${followUp}</td>
-                        <td style="padding: 1rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lap.notes || '-'}</td>
-                    </tr>
-                `;
-            }).join('');
+                if (!response.ok) throw new Error('Update failed');
+                
+                // Award points for status transition
+                const pointsMap = { 'Listed': 50, 'Sold': 100, 'DEAD': 5, 'LOST': 5 };
+                const points = pointsMap[newStatus] || 0;
+                if (points > 0) {
+                    state.dashboard.points += points;
+                    logActivity(`✨ +${points} points: LAP moved to ${newStatus}`);
+                }
+                
+                // Refresh data
+                await fetchSupabaseLaps();
+                updateLapCounts();
+                renderLapsByStatus(lapCurrentFilter);
+                renderDashboard();
+                
+            } catch (error) {
+                console.error('Error updating LAP status:', error);
+                alert('❌ Failed to update LAP status');
+            }
+        }
+        
+        function updateLapCounts() {
+            const laps = state.allLaps || [];
+            document.getElementById('countLAP').textContent = `(${laps.filter(l => l.status === 'LAP').length})`;
+            document.getElementById('countListed').textContent = `(${laps.filter(l => l.status === 'Listed').length})`;
+            document.getElementById('countSold').textContent = `(${laps.filter(l => l.status === 'Sold').length})`;
+            document.getElementById('countDEAD').textContent = `(${laps.filter(l => l.status === 'DEAD').length})`;
+            document.getElementById('countLOST').textContent = `(${laps.filter(l => l.status === 'LOST').length})`;
+        }
+        
+        function toggleLapView() {
+            // Placeholder for table view toggle (can add later)
+            alert('Table view coming soon');
         }
         
         // ===== OUTLOOK CALENDAR INTEGRATION (STRATEGY DISCUSSIONS) =====
@@ -1925,10 +1978,16 @@
             renderWorkKanban();
             renderPersonalKanban();
             updateTargetsDisplay();
+            updateLapCounts();
         }
         
         // Call immediately (scripts at end of body)
         initDashboard();
+        
+        // Set initial LAP tracker view
+        setTimeout(() => {
+            filterLapsByStatus('LAP');
+        }, 500);
     </script>
 </body>
 </html>
