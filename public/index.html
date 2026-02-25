@@ -1854,9 +1854,9 @@
                         body: JSON.stringify({
                             address: address,
                             client_name: client,
-                            status: outcome,
+                            status: 'LAP',
                             follow_up_date: followupDateStr,
-                            notes: `[${new Date().toLocaleDateString('en-AU')}] Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`,
+                            notes: `[${new Date().toLocaleDateString('en-AU')}] 🎯 Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`,
                             created_at: new Date().toISOString(),
                             updated_at: new Date().toISOString()
                         })
@@ -1880,9 +1880,8 @@
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            status: outcome,
                             follow_up_date: followupDateStr,
-                            notes: `${matchingLap.notes || ''}\n[${new Date().toLocaleDateString('en-AU')}] Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`,
+                            notes: `${matchingLap.notes || ''}\n[${new Date().toLocaleDateString('en-AU')}] 🎯 Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`,
                             updated_at: new Date().toISOString()
                         })
                     });
