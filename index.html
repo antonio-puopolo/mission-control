@@ -700,6 +700,41 @@
     <main>
         <!-- DASHBOARD TAB -->
         <div class="tab-content active" id="dashboard">
+            <!-- LOG STRATEGY DISCUSSION FORM -->
+            <div class="card" style="margin-bottom: 2rem; background: rgba(0, 212, 170, 0.05); border-left: 3px solid var(--accent);">
+                <h3 style="margin-bottom: 1rem; color: var(--accent);">📝 Log Strategy Discussion Outcome</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Address</label>
+                        <input type="text" id="logAddress" placeholder="e.g., 42 Martha St, Camp Hill" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Client Name</label>
+                        <input type="text" id="logClient" placeholder="e.g., Sarah Johnson" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Outcome</label>
+                        <select id="logOutcome" style="width: 100%;">
+                            <option value="">Select outcome...</option>
+                            <option value="COLD">❄️ COLD</option>
+                            <option value="WARM">🔥 WARM</option>
+                            <option value="HOT">🌡️ HOT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Follow-up (days)</label>
+                        <input type="number" id="logFollowupDays" placeholder="e.g., 14" value="14" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Notes (optional)</label>
+                        <input type="text" id="logNotes" placeholder="e.g., Very interested in listing" style="width: 100%;">
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button onclick="logStrategyDiscussion()" style="width: 100%;">Submit Outcome</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="dashboard-grid">
                 <!-- GCI Target Card -->
                 <div class="card metric-card">
@@ -1700,6 +1735,87 @@
             state.activity.push({ text, time });
             saveState();
             renderDashboard();
+        }
+
+        // ===== LOG STRATEGY DISCUSSION OUTCOME =====
+        async function logStrategyDiscussion() {
+            const address = document.getElementById('logAddress').value.trim();
+            const client = document.getElementById('logClient').value.trim();
+            const outcome = document.getElementById('logOutcome').value;
+            const followupDays = parseInt(document.getElementById('logFollowupDays').value) || 14;
+            const notes = document.getElementById('logNotes').value.trim();
+            
+            // Validate
+            if (!address || !client || !outcome) {
+                alert('❌ Please fill in Address, Client Name, and Outcome');
+                return;
+            }
+            
+            // Calculate follow-up date
+            const followupDate = new Date();
+            followupDate.setDate(followupDate.getDate() + followupDays);
+            const followupDateStr = followupDate.toISOString().split('T')[0];
+            
+            // Try to update Supabase
+            const supabaseUrl = 'https://zauqqaifszugluyactcv.supabase.co/rest/v1/laps';
+            const supabaseKey = 'sb_publishable_ZTH04R87aWDjog6FpG7wAw_stLW9yqc';
+            
+            try {
+                // Find matching LAP by address (loose match)
+                const allLaps = state.allLaps || [];
+                const matchingLap = allLaps.find(lap => 
+                    lap.address && lap.address.toLowerCase().includes(address.toLowerCase())
+                );
+                
+                if (!matchingLap) {
+                    alert(`❌ No LAP found for "${address}". Create the LAP first in the LAP Tracker.`);
+                    return;
+                }
+                
+                // Update the LAP in Supabase
+                const updateResponse = await fetch(`${supabaseUrl}?id=eq.${matchingLap.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: outcome,
+                        follow_up_date: followupDateStr,
+                        notes: `${matchingLap.notes || ''}\n[${new Date().toLocaleDateString('en-AU')}] Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`
+                    })
+                });
+                
+                if (!updateResponse.ok) {
+                    throw new Error('Update failed');
+                }
+                
+                // Award points
+                state.dashboard.points += 15;
+                
+                // Log activity
+                logActivity(`🎯 Strategy Discussion: ${address} (${outcome}) • Follow-up: ${followupDateStr}`);
+                
+                // Save state
+                saveState();
+                
+                // Refresh data
+                await fetchSupabaseLaps();
+                renderDashboard();
+                
+                // Clear form
+                document.getElementById('logAddress').value = '';
+                document.getElementById('logClient').value = '';
+                document.getElementById('logOutcome').value = '';
+                document.getElementById('logFollowupDays').value = '14';
+                document.getElementById('logNotes').value = '';
+                
+                alert(`✅ Strategy Discussion logged! Status: ${outcome}`);
+                
+            } catch (error) {
+                console.error('Error logging strategy discussion:', error);
+                alert('❌ Failed to update Supabase. Check browser console.');
+            }
         }
 
         // ===== MANUAL TARGET UPDATE =====
