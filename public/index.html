@@ -688,8 +688,7 @@
         <div class="header-center" id="headerCenter">
             <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
             <button class="nav-tab" data-tab="lap-tracker">📋 LAP Tracker</button>
-            <button class="nav-tab" data-tab="work-projects">💼 Work Projects</button>
-            <button class="nav-tab" data-tab="personal-projects">🏡 Personal</button>
+            <button class="nav-tab" data-tab="projects">📌 Projects</button>
             <button class="nav-tab" data-tab="team">👥 Team</button>
             <button class="nav-tab" data-tab="targets">📋 Targets</button>
             <button class="nav-tab" data-tab="notes">📝 Notes</button>
@@ -850,6 +849,7 @@
                 <button class="nav-tab" onclick="filterLapsByStatus('Listed')" style="border-bottom: 3px solid transparent;" data-status="Listed">🏠 LISTED <span id="countListed" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
                 <button class="nav-tab" onclick="filterLapsByStatus('Sold')" style="border-bottom: 3px solid transparent;" data-status="Sold">✅ SOLD <span id="countSold" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
                 <button class="nav-tab" onclick="filterLapsByStatus('Withdrawn')" style="border-bottom: 3px solid transparent;" data-status="Withdrawn">⚠️ WITHDRAWN <span id="countWithdrawn" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
+                <button class="nav-tab" onclick="filterLapsByStatus('Dead')" style="border-bottom: 3px solid transparent;" data-status="Dead">💀 DEAD <span id="countDead" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
             </div>
             
             <!-- Kanban Cards View -->
@@ -863,41 +863,9 @@
             </div>
         </div>
 
-        <!-- WORK PROJECTS TAB -->
-        <div class="tab-content" id="work-projects">
-            <h2 style="margin-bottom: 1rem;">Work Projects (Real Estate Pipeline)</h2>
-            <div class="kanban-board" id="workKanban">
-                <div class="kanban-column">
-                    <div class="kanban-column-title">Cold Leads</div>
-                    <div class="kanban-cards" data-column="cold"></div>
-                    <button class="add-card-btn" onclick="addWorkCard('cold')">+ Add Lead</button>
-                </div>
-                <div class="kanban-column">
-                    <div class="kanban-column-title">Appraisal Booked</div>
-                    <div class="kanban-cards" data-column="appraisal-booked"></div>
-                    <button class="add-card-btn" onclick="addWorkCard('appraisal-booked')">+ Add</button>
-                </div>
-                <div class="kanban-column">
-                    <div class="kanban-column-title">Appraisal Done</div>
-                    <div class="kanban-cards" data-column="appraisal-done"></div>
-                    <button class="add-card-btn" onclick="addWorkCard('appraisal-done')">+ Add</button>
-                </div>
-                <div class="kanban-column">
-                    <div class="kanban-column-title">Ready to Follow-Up</div>
-                    <div class="kanban-cards" data-column="ready"></div>
-                    <button class="add-card-btn" onclick="addWorkCard('ready')">+ Add</button>
-                </div>
-                <div class="kanban-column">
-                    <div class="kanban-column-title">Listing Active</div>
-                    <div class="kanban-cards" data-column="listing"></div>
-                    <button class="add-card-btn" onclick="addWorkCard('listing')">+ Add</button>
-                </div>
-            </div>
-        </div>
-
         <!-- PERSONAL PROJECTS TAB -->
-        <div class="tab-content" id="personal-projects">
-            <h2 style="margin-bottom: 1rem;">Personal Projects (Shared Tracking)</h2>
+        <div class="tab-content" id="projects">
+            <h2 style="margin-bottom: 1rem;">Projects (Shared Tracking)</h2>
             <div class="kanban-board" id="personalKanban">
                 <div class="kanban-column">
                     <div class="kanban-column-title">Backlog</div>
@@ -1309,6 +1277,7 @@
                                 <option value="Listed" ${status === 'Listed' ? 'selected' : ''}>🏠 LISTED</option>
                                 <option value="Sold" ${status === 'Sold' ? 'selected' : ''}>✅ SOLD</option>
                                 <option value="Withdrawn" ${status === 'Withdrawn' ? 'selected' : ''}>⚠️ WITHDRAWN</option>
+                                <option value="Dead" ${status === 'Dead' ? 'selected' : ''}>💀 DEAD</option>
                             </select>
                         </div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${lap.client_name || lap.name || 'Unknown'}</div>
@@ -1377,6 +1346,7 @@
             document.getElementById('countListed').textContent = `(${laps.filter(l => l.status === 'Listed').length})`;
             document.getElementById('countSold').textContent = `(${laps.filter(l => l.status === 'Sold').length})`;
             document.getElementById('countWithdrawn').textContent = `(${laps.filter(l => l.status === 'Withdrawn').length})`;
+            document.getElementById('countDead').textContent = `(${laps.filter(l => l.status === 'Dead').length})`;
         }
         
         function toggleLapView() {
@@ -2018,7 +1988,6 @@
         // ===== INITIALIZE =====
         function initDashboard() {
             loadState();
-            renderWorkKanban();
             renderPersonalKanban();
             updateTargetsDisplay();
             updateLapCounts();
