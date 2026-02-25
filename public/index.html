@@ -1329,12 +1329,21 @@
                     method: 'PATCH',
                     headers: {
                         'apikey': supabaseKey,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
                     },
-                    body: JSON.stringify({ status: newStatus, updated_at: new Date().toISOString() })
+                    body: JSON.stringify({ 
+                        status: newStatus,
+                        updated_at: new Date().toISOString()
+                    })
                 });
                 
-                if (!response.ok) throw new Error('Update failed');
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error('Supabase error:', response.status, errorData);
+                    throw new Error(`HTTP ${response.status}: ${errorData}`);
+                }
                 
                 // Award points for status transition
                 const pointsMap = { 'Listed': 50, 'Sold': 100, 'DEAD': 5, 'LOST': 5 };
@@ -1344,15 +1353,18 @@
                     logActivity(`✨ +${points} points: LAP moved to ${newStatus}`);
                 }
                 
-                // Refresh data
-                await fetchSupabaseLaps();
+                // Update local state immediately
+                const lap = state.allLaps.find(l => l.id === lapId);
+                if (lap) lap.status = newStatus;
+                
+                saveState();
                 updateLapCounts();
                 renderLapsByStatus(lapCurrentFilter);
                 renderDashboard();
                 
             } catch (error) {
                 console.error('Error updating LAP status:', error);
-                alert('❌ Failed to update LAP status');
+                alert(`❌ Failed to update LAP status: ${error.message}`);
             }
         }
         
