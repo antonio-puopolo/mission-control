@@ -1155,8 +1155,12 @@
             const testNames = ['John Smith', 'Sarah Johnson', 'Rachel Green', 'Michael Brown', 'Emma Wilson', 'David Lee', 'Jessica Taylor', 'Robert Martinez', 'Lisa Anderson', 'Tom Harris'];
             
             try {
-                const response = await fetch(`${supabaseUrl}?order=follow_up_date.asc&limit=200`, {
-                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                const response = await fetch(`${supabaseUrl}?order=follow_up_date.asc&limit=500`, {
+                    method: 'GET',
+                    headers: { 
+                        'apikey': supabaseKey,
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 if (!response.ok) throw new Error('Supabase fetch failed');
@@ -1199,15 +1203,22 @@
                 renderLapTable();
                 renderWorkKanban();
                 
-                // Log sync (only on first load)
+                // Log sync only on first load (don't spam activity feed)
                 if (!window.firstSyncDone) {
-                    logActivity(`📊 Live sync: ${listings} listings, ${laps} LAPs from Supabase`);
+                    console.log(`✅ Supabase synced: ${listings} listings, ${laps} LAPs`);
                     window.firstSyncDone = true;
                 }
+                
+                // Mark as successful for status indicator
+                window.supabaseConnected = true;
             } catch (error) {
                 console.error('Supabase error:', error);
-                if (!window.firstSyncDone) {
-                    logActivity('⚠️ Supabase sync failed (using local data)');
+                // Don't log to activity feed on retry - only if persistent
+                window.supabaseConnected = false;
+                
+                // Silent fallback - use localStorage data
+                if (window.firstSyncDone) {
+                    console.warn('Supabase sync failed, using cached data');
                 }
             }
         }
@@ -1793,10 +1804,15 @@
         });
 
         // ===== INITIALIZE =====
-        loadState();
-        renderWorkKanban();
-        renderPersonalKanban();
-        updateTargetsDisplay();
+        function initDashboard() {
+            loadState();
+            renderWorkKanban();
+            renderPersonalKanban();
+            updateTargetsDisplay();
+        }
+        
+        // Call immediately (scripts at end of body)
+        initDashboard();
     </script>
 </body>
 </html>
