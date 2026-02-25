@@ -710,15 +710,15 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Address</label>
-                        <input type="text" id="logAddress" placeholder="e.g., 42 Martha St, Camp Hill" style="width: 100%;">
+                        <input type="text" id="logAddress" placeholder="e.g., 42 Martha St, Camp Hill" onkeypress="if(event.key==='Enter') logStrategyDiscussion()" style="width: 100%;">
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Client Name</label>
-                        <input type="text" id="logClient" placeholder="e.g., Sarah Johnson" style="width: 100%;">
+                        <input type="text" id="logClient" placeholder="e.g., Sarah Johnson" onkeypress="if(event.key==='Enter') logStrategyDiscussion()" style="width: 100%;">
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Outcome</label>
-                        <select id="logOutcome" style="width: 100%;">
+                        <select id="logOutcome" onchange="checkAutoSubmit()" style="width: 100%;">
                             <option value="">Select outcome...</option>
                             <option value="COLD">❄️ COLD</option>
                             <option value="WARM">🔥 WARM</option>
@@ -727,11 +727,11 @@
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Follow-up (days)</label>
-                        <input type="number" id="logFollowupDays" placeholder="e.g., 14" value="14" style="width: 100%;">
+                        <input type="number" id="logFollowupDays" placeholder="e.g., 14" value="14" onchange="checkAutoSubmit()" style="width: 100%;">
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Notes (optional)</label>
-                        <input type="text" id="logNotes" placeholder="e.g., Very interested in listing" style="width: 100%;">
+                        <input type="text" id="logNotes" placeholder="e.g., Very interested in listing" onkeypress="if(event.key==='Enter') logStrategyDiscussion()" style="width: 100%;">
                     </div>
                     <div style="display: flex; align-items: flex-end;">
                         <button onclick="logStrategyDiscussion()" style="width: 100%;">Submit Outcome</button>
@@ -1799,6 +1799,20 @@
             renderDashboard();
         }
 
+        // ===== AUTO-SUBMIT CHECK =====
+        function checkAutoSubmit() {
+            const address = document.getElementById('logAddress').value.trim();
+            const client = document.getElementById('logClient').value.trim();
+            const outcome = document.getElementById('logOutcome').value;
+            
+            // Auto-submit when all required fields are filled
+            if (address && client && outcome) {
+                setTimeout(() => {
+                    logStrategyDiscussion();
+                }, 200); // Small delay to feel natural
+            }
+        }
+        
         // ===== LOG STRATEGY DISCUSSION OUTCOME =====
         async function logStrategyDiscussion() {
             const address = document.getElementById('logAddress').value.trim();
