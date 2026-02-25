@@ -844,8 +844,7 @@
                 <button class="nav-tab" onclick="filterLapsByStatus('LAP')" style="border-bottom: 3px solid transparent;" data-status="LAP">📍 LAP <span id="countLAP" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
                 <button class="nav-tab" onclick="filterLapsByStatus('Listed')" style="border-bottom: 3px solid transparent;" data-status="Listed">🏠 LISTED <span id="countListed" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
                 <button class="nav-tab" onclick="filterLapsByStatus('Sold')" style="border-bottom: 3px solid transparent;" data-status="Sold">✅ SOLD <span id="countSold" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
-                <button class="nav-tab" onclick="filterLapsByStatus('DEAD')" style="border-bottom: 3px solid transparent;" data-status="DEAD">💀 DEAD <span id="countDEAD" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
-                <button class="nav-tab" onclick="filterLapsByStatus('LOST')" style="border-bottom: 3px solid transparent;" data-status="LOST">🚨 LOST <span id="countLOST" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
+                <button class="nav-tab" onclick="filterLapsByStatus('Withdrawn')" style="border-bottom: 3px solid transparent;" data-status="Withdrawn">⚠️ WITHDRAWN <span id="countWithdrawn" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
             </div>
             
             <!-- Kanban Cards View -->
@@ -1304,11 +1303,10 @@
                                 <option value="LAP" ${status === 'LAP' ? 'selected' : ''}>📍 LAP</option>
                                 <option value="Listed" ${status === 'Listed' ? 'selected' : ''}>🏠 LISTED</option>
                                 <option value="Sold" ${status === 'Sold' ? 'selected' : ''}>✅ SOLD</option>
-                                <option value="DEAD" ${status === 'DEAD' ? 'selected' : ''}>💀 DEAD</option>
-                                <option value="LOST" ${status === 'LOST' ? 'selected' : ''}>🚨 LOST</option>
+                                <option value="Withdrawn" ${status === 'Withdrawn' ? 'selected' : ''}>⚠️ WITHDRAWN</option>
                             </select>
                         </div>
-                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${lap.name || 'Unknown'}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${lap.client_name || lap.name || 'Unknown'}</div>
                         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light);">
                             📅 Follow-up: ${followUp}
                         </div>
@@ -1346,7 +1344,7 @@
                 }
                 
                 // Award points for status transition
-                const pointsMap = { 'Listed': 50, 'Sold': 100, 'DEAD': 5, 'LOST': 5 };
+                const pointsMap = { 'Listed': 50, 'Sold': 100, 'Withdrawn': 5 };
                 const points = pointsMap[newStatus] || 0;
                 if (points > 0) {
                     state.dashboard.points += points;
@@ -1373,8 +1371,7 @@
             document.getElementById('countLAP').textContent = `(${laps.filter(l => l.status === 'LAP').length})`;
             document.getElementById('countListed').textContent = `(${laps.filter(l => l.status === 'Listed').length})`;
             document.getElementById('countSold').textContent = `(${laps.filter(l => l.status === 'Sold').length})`;
-            document.getElementById('countDEAD').textContent = `(${laps.filter(l => l.status === 'DEAD').length})`;
-            document.getElementById('countLOST').textContent = `(${laps.filter(l => l.status === 'LOST').length})`;
+            document.getElementById('countWithdrawn').textContent = `(${laps.filter(l => l.status === 'Withdrawn').length})`;
         }
         
         function toggleLapView() {
