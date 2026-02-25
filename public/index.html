@@ -579,6 +579,28 @@
             padding: 0;
         }
 
+        /* LAP Table */
+        table {
+            width: 100%;
+        }
+
+        table tr:hover {
+            background-color: rgba(0, 212, 170, 0.05);
+        }
+
+        table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border-medium);
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             main {
@@ -660,6 +682,7 @@
         </div>
         <div class="header-center" id="headerCenter">
             <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="nav-tab" data-tab="lap-tracker">📋 LAP Tracker</button>
             <button class="nav-tab" data-tab="work-projects">💼 Work Projects</button>
             <button class="nav-tab" data-tab="personal-projects">🏡 Personal</button>
             <button class="nav-tab" data-tab="team">👥 Team</button>
@@ -774,6 +797,37 @@
                         <span>Listing Streak: <strong id="listingStreak">0</strong> days</span>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- LAP TRACKER TAB -->
+        <div class="tab-content" id="lap-tracker">
+            <h2 style="margin-bottom: 1rem;">LAP Tracker (Full Pipeline)</h2>
+            <div style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <input type="text" id="lapFilter" placeholder="Search by address, client..." style="flex: 1; min-width: 200px;" onkeyup="filterLapTable()">
+                <select id="statusFilter" onchange="filterLapTable()" style="min-width: 150px;">
+                    <option value="">All Status</option>
+                    <option value="LAP">LAP</option>
+                    <option value="Listed">Listed</option>
+                    <option value="Sold">Sold</option>
+                    <option value="Withdrawn">Withdrawn</option>
+                </select>
+            </div>
+            <div class="card" style="overflow-x: auto;">
+                <table id="lapTable" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border-light);">
+                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Address</th>
+                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Client</th>
+                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Status</th>
+                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Follow-Up</th>
+                            <th style="text-align: left; padding: 1rem; font-weight: 600; color: var(--accent);">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lapTableBody">
+                        <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Loading LAPs...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -903,6 +957,7 @@
                 lapsCurrent: 0,
                 points: 0,
             },
+            allLaps: [],
             workProjects: [],
             personalProjects: [
                 {
@@ -967,17 +1022,20 @@
             const testNames = ['John Smith', 'Sarah Johnson', 'Rachel Green', 'Michael Brown', 'Emma Wilson', 'David Lee', 'Jessica Taylor', 'Robert Martinez', 'Lisa Anderson', 'Tom Harris'];
             
             try {
-                const response = await fetch(`${supabaseUrl}?status=eq.LAP&order=follow_up_date.asc&limit=100`, {
+                const response = await fetch(`${supabaseUrl}?order=follow_up_date.asc&limit=200`, {
                     headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
                 });
                 
                 if (!response.ok) throw new Error('Supabase fetch failed');
                 
-                const laps = await response.json();
+                const allLaps = await response.json();
                 
-                // Filter test names and populate work projects
-                state.workProjects = laps
-                    .filter(lap => !testNames.includes(lap.name))
+                // Store all LAPs for tracker (with test names filtered out for display)
+                state.allLaps = allLaps.filter(lap => !testNames.includes(lap.name));
+                
+                // Populate work projects with LAP status entries
+                state.workProjects = state.allLaps
+                    .filter(lap => lap.status === 'LAP')
                     .map(lap => ({
                         id: lap.id,
                         title: lap.name,
@@ -989,13 +1047,72 @@
                         supabaseId: lap.id,
                     }));
                 
-                saveState();
+                renderLapTable();
                 renderWorkKanban();
-                logActivity(`📊 Synced ${state.workProjects.length} LAPs from Supabase`);
+                logActivity(`📊 Synced ${state.workProjects.length} LAPs + ${state.allLaps.length} total records`);
             } catch (error) {
                 console.error('Supabase error:', error);
                 logActivity('⚠️ Supabase sync failed (using local data)');
             }
+        }
+        
+        // ===== LAP TABLE RENDERING =====
+        function renderLapTable() {
+            const laps = state.allLaps || [];
+            const tbody = document.getElementById('lapTableBody');
+            
+            if (laps.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No LAPs found. Sync Supabase to load.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = laps.map(lap => {
+                const followUp = lap.follow_up_date ? new Date(lap.follow_up_date).toLocaleDateString('en-AU') : '-';
+                const statusColor = lap.status === 'LAP' ? 'var(--info)' : lap.status === 'Listed' ? 'var(--accent)' : lap.status === 'Sold' ? 'var(--success)' : 'var(--text-secondary)';
+                
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-light); hover: background-color: rgba(0, 212, 170, 0.05);">
+                        <td style="padding: 1rem; color: var(--text-primary);">${lap.address || '-'}</td>
+                        <td style="padding: 1rem; color: var(--text-primary);">${lap.name || '-'}</td>
+                        <td style="padding: 1rem;"><span style="color: ${statusColor}; font-weight: 600;">${lap.status || '-'}</span></td>
+                        <td style="padding: 1rem; color: var(--text-secondary);">${followUp}</td>
+                        <td style="padding: 1rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lap.notes || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function filterLapTable() {
+            const filterText = document.getElementById('lapFilter').value.toLowerCase();
+            const filterStatus = document.getElementById('statusFilter').value;
+            const tbody = document.getElementById('lapTableBody');
+            
+            const filtered = (state.allLaps || []).filter(lap => {
+                const matchesText = (lap.address || '').toLowerCase().includes(filterText) || 
+                                    (lap.name || '').toLowerCase().includes(filterText);
+                const matchesStatus = !filterStatus || lap.status === filterStatus;
+                return matchesText && matchesStatus;
+            });
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No LAPs match your filter.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filtered.map(lap => {
+                const followUp = lap.follow_up_date ? new Date(lap.follow_up_date).toLocaleDateString('en-AU') : '-';
+                const statusColor = lap.status === 'LAP' ? 'var(--info)' : lap.status === 'Listed' ? 'var(--accent)' : lap.status === 'Sold' ? 'var(--success)' : 'var(--text-secondary)';
+                
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 1rem; color: var(--text-primary);">${lap.address || '-'}</td>
+                        <td style="padding: 1rem; color: var(--text-primary);">${lap.name || '-'}</td>
+                        <td style="padding: 1rem;"><span style="color: ${statusColor}; font-weight: 600;">${lap.status || '-'}</span></td>
+                        <td style="padding: 1rem; color: var(--text-secondary);">${followUp}</td>
+                        <td style="padding: 1rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lap.notes || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
         }
         
         // ===== OUTLOOK CALENDAR INTEGRATION =====
@@ -1293,7 +1410,7 @@
                     const nextSection = card.next ? `<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light);"><div style="font-size: 0.8rem; color: var(--accent); font-weight: 600; margin-bottom: 0.5rem;">Next:</div><div style="font-size: 0.75rem; color: var(--text-secondary);">${card.next}</div></div>` : '';
                     
                     return `
-                        <div class="kanban-card" style="cursor: pointer;" onclick="editPersonalCard(${card.id})">
+                        <div class="kanban-card" draggable="true" data-card-id="${card.id}" data-from-column="${card.column}" style="cursor: grab;">
                             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
                                 <div class="kanban-card-title">${card.title}</div>
                                 <div style="font-size: 0.7rem; background: ${card.owner === 'hamm' ? 'rgba(255, 107, 107, 0.2)' : 'rgba(108, 99, 255, 0.2)'}; color: ${card.owner === 'hamm' ? '#ff6b6b' : '#6c63ff'}; padding: 0.25rem 0.5rem; border-radius: 12px;">${ownerLabel}</div>
@@ -1304,7 +1421,50 @@
                         </div>
                     `;
                 }).join('');
+                
+                // Attach drag listeners
+                container.querySelectorAll('.kanban-card').forEach(card => {
+                    card.addEventListener('dragstart', handlePersonalDragStart);
+                    card.addEventListener('dragend', handleDragEnd);
+                });
             });
+            
+            // Attach drop listeners to personal columns
+            document.querySelectorAll('#personalKanban .kanban-cards').forEach(col => {
+                col.addEventListener('dragover', handleDragOver);
+                col.addEventListener('drop', handlePersonalDrop);
+            });
+        }
+        
+        function handlePersonalDragStart(e) {
+            draggedCard = this;
+            this.style.opacity = '0.5';
+        }
+        
+        function handlePersonalDrop(e) {
+            e.preventDefault();
+            if (!draggedCard) return;
+            
+            const cardId = parseInt(draggedCard.dataset.cardId);
+            const fromColumn = draggedCard.dataset.fromColumn;
+            const toColumn = this.dataset.column;
+            
+            if (fromColumn === toColumn) {
+                draggedCard.style.opacity = '1';
+                return;
+            }
+            
+            const card = state.personalProjects.find(c => c.id === cardId);
+            if (!card) return;
+            
+            card.column = toColumn;
+            card.updated = new Date().toISOString();
+            
+            const columnNames = { 'backlog': 'Backlog', 'in-progress': 'In Progress', 'done': 'Done' };
+            logActivity(`📌 ${card.title} moved to ${columnNames[toColumn]}`);
+            
+            saveState();
+            renderPersonalKanban();
         }
         
         function editPersonalCard(id) {
