@@ -895,35 +895,127 @@
 
         <!-- TARGETS TAB -->
         <div class="tab-content" id="targets">
-            <h2 style="margin-bottom: 1rem;">Annual Targets & Goals</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <h2 style="margin-bottom: 1rem;">FY25-26 Targets & Progress</h2>
+            
+            <!-- Progress Overview -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <!-- GCI -->
                 <div class="card">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">GCI Target ($)</label>
-                    <input type="number" id="targetGci" value="4000000" onchange="saveTargets()">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">💰 GCI Progress</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem;">$2.23M / $4M</div>
+                    <div style="margin-bottom: 0.75rem;">
+                        <div class="progress-bar" style="margin-bottom: 0.5rem;">
+                            <div class="progress-fill" style="width: 55.7%"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">55.7% complete</div>
+                    </div>
+                    <div style="padding-top: 0.75rem; border-top: 1px solid var(--border-light); font-size: 0.8rem; color: var(--text-secondary);">
+                        Need: $13,935/day<br>
+                        Remaining: $1.77M
+                    </div>
                 </div>
+
+                <!-- Listings -->
                 <div class="card">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Listings Target</label>
-                    <input type="number" id="targetListings" value="110" onchange="saveTargets()">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">📍 Listings Progress</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem;">49 / 110</div>
+                    <div style="margin-bottom: 0.75rem;">
+                        <div class="progress-bar" style="margin-bottom: 0.5rem;">
+                            <div class="progress-fill" style="width: 44.5%"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">44.5% complete</div>
+                    </div>
+                    <div style="padding-top: 0.75rem; border-top: 1px solid var(--border-light); font-size: 0.8rem; color: var(--text-secondary);">
+                        Need: 0.49/day<br>
+                        Remaining: 61 listings
+                    </div>
                 </div>
+
+                <!-- LAPs -->
                 <div class="card">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">LAPs Target</label>
-                    <input type="number" id="targetLaps" value="350" onchange="saveTargets()">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">📋 LAPs Progress</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem;">167 / 350</div>
+                    <div style="margin-bottom: 0.75rem;">
+                        <div class="progress-bar" style="margin-bottom: 0.5rem;">
+                            <div class="progress-fill" style="width: 47.7%"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">47.7% complete</div>
+                    </div>
+                    <div style="padding-top: 0.75rem; border-top: 1px solid var(--border-light); font-size: 0.8rem; color: var(--text-secondary);">
+                        Need: 1.46/day<br>
+                        Remaining: 183 LAPs
+                    </div>
                 </div>
             </div>
-            <div class="card" style="margin-top: 1.5rem;">
-                <h3>Key Milestones</h3>
-                <div style="margin-top: 1rem;">
-                    <div style="display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border-light);">
-                        <span>100 Listings Reached</span>
-                        <span id="milestone-listings" style="color: var(--text-secondary);">0/100</span>
+
+            <!-- Key Milestones -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Key Milestones</h3>
+                <div style="display: grid; gap: 1rem;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>💰 $2M Halfway Point</span>
+                            <span style="font-weight: 600; color: var(--success);">✅ HIT (111%)</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 100%; background: linear-gradient(90deg, var(--success), var(--accent-light));"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">$2.23M / $2M</div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border-light);">
-                        <span>200 LAPs Reached</span>
-                        <span id="milestone-laps" style="color: var(--text-secondary);">0/200</span>
+                    
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>📍 50 Listings Milestone</span>
+                            <span style="font-weight: 600; color: var(--success);">✅ HIT (98%)</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 98%;"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">49 / 50</div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 1rem;">
-                        <span>$2M GCI Halfway</span>
-                        <span id="milestone-gci" style="color: var(--text-secondary);">$0/$2M</span>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>📋 200 LAPs Milestone</span>
+                            <span style="font-weight: 600; color: var(--warning);">IN PROGRESS (83.5%)</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 83.5%;"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">167 / 200</div>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>📋 350 LAPs Final Target</span>
+                            <span style="font-weight: 600; color: var(--info);">47.7% TO GO</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 47.7%;"></div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">167 / 350</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Days Remaining -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Timeline</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div style="padding: 1rem; background: rgba(0, 212, 170, 0.05); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Days Remaining</div>
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">126</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Until June 30, 2026</div>
+                    </div>
+                    <div style="padding: 1rem; background: rgba(255, 165, 2, 0.05); border-radius: 8px; border-left: 3px solid var(--warning);">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Days Elapsed</div>
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">238</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Since July 1, 2025</div>
+                    </div>
+                    <div style="padding: 1rem; background: rgba(108, 99, 255, 0.05); border-radius: 8px; border-left: 3px solid var(--info);">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Total Year</div>
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--info);">365</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Days in FY25-26</div>
                     </div>
                 </div>
             </div>
@@ -953,8 +1045,8 @@
                 listingsTarget: 110,
                 lapsTarget: 350,
                 gciCurrent: 2228884.64,
-                listingsCurrent: 0,
-                lapsCurrent: 0,
+                listingsCurrent: 49,
+                lapsCurrent: 167,
                 points: 0,
             },
             allLaps: [],
