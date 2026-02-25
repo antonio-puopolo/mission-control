@@ -897,6 +897,29 @@
         <div class="tab-content" id="targets">
             <h2 style="margin-bottom: 1rem;">FY25-26 Targets & Progress</h2>
             
+            <!-- Manual Override Section -->
+            <div class="card" style="margin-bottom: 2rem; background: rgba(0, 212, 170, 0.05); border-left: 3px solid var(--accent);">
+                <h3 style="margin-bottom: 1rem; color: var(--accent);">Update Actual Numbers</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Update real numbers here (overrides Supabase auto-sync)</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">GCI Earned ($)</label>
+                        <input type="number" id="editGciCurrent" value="2228884.64" style="width: 100%;" onchange="updateManualTargets()">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Listings Count</label>
+                        <input type="number" id="editListingsCurrent" value="49" style="width: 100%;" onchange="updateManualTargets()">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">LAPs Count</label>
+                        <input type="number" id="editLapsCurrent" value="167" style="width: 100%;" onchange="updateManualTargets()">
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button onclick="updateManualTargets()" style="width: 100%;">Update Numbers</button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Progress Overview -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
                 <!-- GCI -->
@@ -1101,6 +1124,13 @@
             renderTeam();
             renderNotes();
             
+            // Restore manual override values to input fields if they exist
+            if (document.getElementById('editGciCurrent')) {
+                document.getElementById('editGciCurrent').value = state.dashboard.gciCurrent;
+                document.getElementById('editListingsCurrent').value = state.dashboard.listingsCurrent;
+                document.getElementById('editLapsCurrent').value = state.dashboard.lapsCurrent;
+            }
+            
             // Load live data
             fetchSupabaseLaps();
             fetchOutlookCalendar();
@@ -1136,13 +1166,19 @@
                 // Store all LAPs for tracker (with test names filtered out for display)
                 state.allLaps = allLaps.filter(lap => !testNames.includes(lap.name));
                 
-                // CALCULATE REAL METRICS FROM SUPABASE
-                const listings = state.allLaps.filter(lap => lap.status === 'Listed').length;
-                const laps = state.allLaps.filter(lap => lap.status === 'LAP').length;
+                // ONLY update from Supabase if manual overrides aren't set
+                // Check if user has manually edited the numbers
+                const hasManualOverrides = localStorage.getItem('missionControlManualOverride');
                 
-                // Update dashboard with LIVE data
-                state.dashboard.listingsCurrent = listings;
-                state.dashboard.lapsCurrent = laps;
+                if (!hasManualOverrides) {
+                    // CALCULATE REAL METRICS FROM SUPABASE
+                    const listings = state.allLaps.filter(lap => lap.status === 'Listed').length;
+                    const laps = state.allLaps.filter(lap => lap.status === 'LAP').length;
+                    
+                    // Update dashboard with LIVE data
+                    state.dashboard.listingsCurrent = listings;
+                    state.dashboard.lapsCurrent = laps;
+                }
                 
                 // Populate work projects with LAP status entries
                 state.workProjects = state.allLaps
@@ -1653,6 +1689,31 @@
             state.activity.push({ text, time });
             saveState();
             renderDashboard();
+        }
+
+        // ===== MANUAL TARGET UPDATE =====
+        function updateManualTargets() {
+            const gciInput = parseFloat(document.getElementById('editGciCurrent').value) || 0;
+            const listingsInput = parseInt(document.getElementById('editListingsCurrent').value) || 0;
+            const lapsInput = parseInt(document.getElementById('editLapsCurrent').value) || 0;
+            
+            // Update state with manual values
+            state.dashboard.gciCurrent = gciInput;
+            state.dashboard.listingsCurrent = listingsInput;
+            state.dashboard.lapsCurrent = lapsInput;
+            
+            // Mark that manual overrides are in use
+            localStorage.setItem('missionControlManualOverride', 'true');
+            
+            // Save to localStorage
+            saveState();
+            
+            // Update display immediately
+            updateTargetsDisplay();
+            renderDashboard();
+            
+            // Log the update
+            logActivity(`✏️ Updated targets: $${gciInput.toLocaleString()} GCI, ${listingsInput} listings, ${lapsInput} LAPs`);
         }
 
         // ===== TARGETS DISPLAY (LIVE UPDATE) =====
