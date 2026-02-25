@@ -50,8 +50,8 @@
         header {
             position: sticky;
             top: 0;
-            z-index: 1000;
-            background: rgba(5, 5, 8, 0.8);
+            z-index: 10000;
+            background: rgba(5, 5, 8, 0.95);
             backdrop-filter: blur(var(--blur));
             border-bottom: 1px solid var(--border-light);
             padding: 1rem 2rem;
@@ -136,12 +136,17 @@
 
         /* ===== TAB CONTENT ===== */
         .tab-content {
-            display: none;
-            animation: fadeInUp 0.4s ease;
+            display: none !important;
+            opacity: 0;
+            animation: fadeInUp 0.4s ease forwards;
+            visibility: hidden;
         }
 
         .tab-content.active {
-            display: block;
+            display: block !important;
+            opacity: 1;
+            visibility: visible;
+            animation: fadeInUp 0.4s ease forwards;
         }
 
         @keyframes fadeInUp {
@@ -1955,23 +1960,52 @@
         }
 
         // ===== TAB NAVIGATION =====
-        document.querySelectorAll('.nav-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab).classList.add('active');
-                
-                // Update targets display when Targets tab is opened
-                if (btn.dataset.tab === 'targets') {
-                    updateTargetsDisplay();
-                }
-                
-                // Close mobile menu on tab click
-                document.getElementById('headerCenter').classList.remove('mobile-active');
-                document.getElementById('mobileMenuToggle').textContent = '☰';
+        function setupTabNavigation() {
+            document.querySelectorAll('.nav-tab[data-tab]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const tabName = this.getAttribute('data-tab');
+                    if (!tabName) return;
+                    
+                    // Remove active from all tabs and content
+                    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    
+                    // Add active to clicked tab and corresponding content
+                    this.classList.add('active');
+                    const tabContent = document.getElementById(tabName);
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+                        // Force reflow to ensure CSS applies
+                        void tabContent.offsetHeight;
+                    }
+                    
+                    // Update targets display when Targets tab is opened
+                    if (tabName === 'targets') {
+                        setTimeout(() => updateTargetsDisplay(), 100);
+                    }
+                    
+                    // Close mobile menu on tab click
+                    const headerCenter = document.getElementById('headerCenter');
+                    if (headerCenter) {
+                        headerCenter.classList.remove('mobile-active');
+                    }
+                    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+                    if (mobileMenuToggle) {
+                        mobileMenuToggle.textContent = '☰';
+                    }
+                });
             });
-        });
+        }
+        
+        // Setup tab navigation after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupTabNavigation);
+        } else {
+            setupTabNavigation();
+        }
 
         // ===== MOBILE MENU TOGGLE =====
         document.getElementById('mobileMenuToggle').addEventListener('click', () => {
@@ -1988,6 +2022,7 @@
             renderPersonalKanban();
             updateTargetsDisplay();
             updateLapCounts();
+            setupTabNavigation(); // Ensure tab navigation is set up
         }
         
         // Call immediately (scripts at end of body)
