@@ -843,6 +843,11 @@
         <div class="tab-content" id="lap-tracker">
             <h2 style="margin-bottom: 1rem;">📋 LAP Tracker (Full Pipeline)</h2>
             
+            <!-- Search Bar -->
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="lapSearchInput" placeholder="🔍 Search by address, client name, notes..." onkeyup="filterLapsBySearch()" style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-light); color: var(--text-primary); border-radius: var(--radius); font-size: 0.9rem;">
+            </div>
+            
             <!-- Status Tabs -->
             <div style="display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--border-light); flex-wrap: wrap;">
                 <button class="nav-tab" onclick="filterLapsByStatus('LAP')" style="border-bottom: 3px solid transparent;" data-status="LAP">📍 LAP <span id="countLAP" style="font-size: 0.8rem; color: var(--text-secondary);">(0)</span></button>
@@ -1238,6 +1243,7 @@
         
         // ===== LAP TRACKER STATUS FILTERING =====
         let lapCurrentFilter = 'LAP';
+        let lapSearchQuery = '';
         
         function filterLapsByStatus(status) {
             lapCurrentFilter = status;
@@ -1255,12 +1261,31 @@
             renderLapsByStatus(status);
         }
         
+        function filterLapsBySearch() {
+            const searchInput = document.getElementById('lapSearchInput');
+            lapSearchQuery = searchInput.value;
+            renderLapsByStatus(lapCurrentFilter);
+        }
+        
         function renderLapsByStatus(status) {
-            const laps = (state.allLaps || []).filter(lap => lap.status === status);
+            let laps = (state.allLaps || []).filter(lap => lap.status === status);
+            
+            // Apply search filter if query is not empty
+            if (lapSearchQuery.trim() !== '') {
+                const query = lapSearchQuery.toLowerCase();
+                laps = laps.filter(lap => {
+                    const address = (lap.address || '').toLowerCase();
+                    const clientName = (lap.client_name || lap.name || '').toLowerCase();
+                    const notes = (lap.notes || '').toLowerCase();
+                    return address.includes(query) || clientName.includes(query) || notes.includes(query);
+                });
+            }
+            
             const container = document.getElementById('lapKanbanView');
             
             if (laps.length === 0) {
-                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-secondary);">No ${status} LAPs yet</div>`;
+                const message = lapSearchQuery.trim() !== '' ? `No ${status} LAPs match "${lapSearchQuery}"` : `No ${status} LAPs yet`;
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-secondary);">${message}</div>`;
                 return;
             }
             
