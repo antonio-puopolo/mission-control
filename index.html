@@ -1235,7 +1235,7 @@
             }).join('');
         }
         
-        // ===== OUTLOOK CALENDAR INTEGRATION =====
+        // ===== OUTLOOK CALENDAR INTEGRATION (STRATEGY DISCUSSIONS) =====
         async function fetchOutlookCalendar() {
             const icsUrl = 'https://outlook.office365.com/owa/calendar/07f56935aa514c53a9b25c4cd91ab770@eplace.com.au/15298fe26beb432fa81e6a151d8ea95c8741059819679929176/S-1-8-4263074342-955477810-1291768194-2244477723/reachcalendar.ics';
             
@@ -1244,27 +1244,70 @@
                 if (!response.ok) throw new Error('Calendar fetch failed');
                 const icsText = await response.text();
                 
-                // Parse ICS for appraisal events
+                // Parse ICS for strategy discussions & appraisals
                 const lines = icsText.split('\n');
-                let inEvent = false, summary = '', dtstart = '';
+                let inEvent = false, summary = '', dtstart = '', location = '';
+                let strategyDiscussions = [];
+                let appraisals = [];
                 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (line === 'BEGIN:VEVENT') inEvent = true;
                     if (line === 'END:VEVENT') {
-                        if (inEvent && summary.toLowerCase().includes('appraisal')) {
+                        if (inEvent) {
                             const eventDate = dtstart.substring(0, 8);
-                            logActivity(`📅 Appraisal scheduled: ${summary} (${formatDate(eventDate)})`);
+                            const eventTime = dtstart.length > 8 ? dtstart.substring(9, 13) : '';
+                            
+                            if (summary.toLowerCase().includes('strategy discussion')) {
+                                strategyDiscussions.push({
+                                    summary,
+                                    date: formatDate(eventDate),
+                                    time: eventTime,
+                                    location: location || 'TBA'
+                                });
+                            }
+                            
+                            if (summary.toLowerCase().includes('appraisal')) {
+                                appraisals.push({
+                                    summary,
+                                    date: formatDate(eventDate),
+                                    time: eventTime
+                                });
+                            }
                         }
                         inEvent = false;
                         summary = '';
                         dtstart = '';
+                        location = '';
                     }
                     if (inEvent && line.startsWith('SUMMARY:')) summary = line.substring(8);
                     if (inEvent && line.startsWith('DTSTART')) dtstart = line.substring(line.indexOf(':') + 1);
+                    if (inEvent && line.startsWith('LOCATION:')) location = line.substring(9);
                 }
                 
-                logActivity('📅 Calendar synced');
+                // Log strategy discussions today
+                const today = new Date().toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const todaysStrategies = strategyDiscussions.filter(s => s.date === today);
+                
+                if (todaysStrategies.length > 0) {
+                    todaysStrategies.forEach(s => {
+                        logActivity(`🎯 Strategy Discussion: ${s.location} @ ${s.time || 'TBA'}`);
+                        // Award points for strategy discussions
+                        state.dashboard.points += 15;
+                    });
+                }
+                
+                if (appraisals.length > 0) {
+                    const todaysAppraisals = appraisals.filter(a => a.date === today);
+                    if (todaysAppraisals.length > 0) {
+                        logActivity(`📅 ${todaysAppraisals.length} appraisal(s) scheduled today`);
+                    }
+                }
+                
+                // Store for reference
+                state.strategyDiscussions = strategyDiscussions;
+                saveState();
+                
             } catch (error) {
                 console.error('Calendar error:', error);
                 // Graceful fallback
