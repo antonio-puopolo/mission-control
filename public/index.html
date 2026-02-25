@@ -1818,38 +1818,65 @@
             followupDate.setDate(followupDate.getDate() + followupDays);
             const followupDateStr = followupDate.toISOString().split('T')[0];
             
-            // Try to update Supabase
+            // Supabase config
             const supabaseUrl = 'https://zauqqaifszugluyactcv.supabase.co/rest/v1/laps';
             const supabaseKey = 'sb_publishable_ZTH04R87aWDjog6FpG7wAw_stLW9yqc';
             
             try {
                 // Find matching LAP by address (loose match)
                 const allLaps = state.allLaps || [];
-                const matchingLap = allLaps.find(lap => 
+                let matchingLap = allLaps.find(lap => 
                     lap.address && lap.address.toLowerCase().includes(address.toLowerCase())
                 );
                 
+                // If LAP doesn't exist, CREATE it first
                 if (!matchingLap) {
-                    alert(`❌ No LAP found for "${address}". Create the LAP first in the LAP Tracker.`);
-                    return;
-                }
-                
-                // Update the LAP in Supabase
-                const updateResponse = await fetch(`${supabaseUrl}?id=eq.${matchingLap.id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'apikey': supabaseKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        status: outcome,
-                        follow_up_date: followupDateStr,
-                        notes: `${matchingLap.notes || ''}\n[${new Date().toLocaleDateString('en-AU')}] Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`
-                    })
-                });
-                
-                if (!updateResponse.ok) {
-                    throw new Error('Update failed');
+                    const createResponse = await fetch(supabaseUrl, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': supabaseKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            address: address,
+                            name: client,
+                            client_name: client,
+                            status: outcome,
+                            follow_up_date: followupDateStr,
+                            notes: `[${new Date().toLocaleDateString('en-AU')}] Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        })
+                    });
+                    
+                    if (!createResponse.ok) {
+                        const errorData = await createResponse.text();
+                        console.error('Create error:', errorData);
+                        throw new Error('Failed to create LAP: ' + errorData);
+                    }
+                    
+                    const newLaps = await createResponse.json();
+                    matchingLap = newLaps[0];
+                    logActivity(`📍 NEW LAP created: ${address} (${client})`);
+                } else {
+                    // Update existing LAP
+                    const updateResponse = await fetch(`${supabaseUrl}?id=eq.${matchingLap.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': supabaseKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: outcome,
+                            follow_up_date: followupDateStr,
+                            notes: `${matchingLap.notes || ''}\n[${new Date().toLocaleDateString('en-AU')}] Strategy Discussion: ${outcome}${notes ? ' - ' + notes : ''}`,
+                            updated_at: new Date().toISOString()
+                        })
+                    });
+                    
+                    if (!updateResponse.ok) {
+                        throw new Error('Update failed');
+                    }
                 }
                 
                 // Award points
@@ -1876,7 +1903,7 @@
                 
             } catch (error) {
                 console.error('Error logging strategy discussion:', error);
-                alert('❌ Failed to update Supabase. Check browser console.');
+                alert(`❌ Failed: ${error.message}`);
             }
         }
 
